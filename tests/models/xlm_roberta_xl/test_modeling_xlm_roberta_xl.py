@@ -22,6 +22,7 @@ from transformers.testing_utils import require_torch, slow, torch_device
 from ...generation.test_utils import GenerationTesterMixin
 from ...test_configuration_common import ConfigTester
 from ...test_modeling_common import ModelTesterMixin, floats_tensor, ids_tensor, random_attention_mask
+from ...test_pipeline_mixin import PipelineTesterMixin
 
 
 if is_torch_available():
@@ -357,8 +358,7 @@ class XLMRobertaXLModelTester:
 
 
 @require_torch
-class XLMRobertaXLModelTest(ModelTesterMixin, GenerationTesterMixin, unittest.TestCase):
-
+class XLMRobertaXLModelTest(ModelTesterMixin, GenerationTesterMixin, PipelineTesterMixin, unittest.TestCase):
     all_model_classes = (
         (
             XLMRobertaXLForCausalLM,
@@ -373,6 +373,19 @@ class XLMRobertaXLModelTest(ModelTesterMixin, GenerationTesterMixin, unittest.Te
         else ()
     )
     all_generative_model_classes = (XLMRobertaXLForCausalLM,) if is_torch_available() else ()
+    pipeline_model_mapping = (
+        {
+            "feature-extraction": XLMRobertaXLModel,
+            "fill-mask": XLMRobertaXLForMaskedLM,
+            "question-answering": XLMRobertaXLForQuestionAnswering,
+            "text-classification": XLMRobertaXLForSequenceClassification,
+            "text-generation": XLMRobertaXLForCausalLM,
+            "token-classification": XLMRobertaXLForTokenClassification,
+            "zero-shot": XLMRobertaXLForSequenceClassification,
+        }
+        if is_torch_available()
+        else {}
+    )
 
     def setUp(self):
         self.model_tester = XLMRobertaXLModelTester(self)
@@ -429,6 +442,11 @@ class XLMRobertaXLModelTest(ModelTesterMixin, GenerationTesterMixin, unittest.Te
 
     def test_decoder_model_past_with_large_inputs(self):
         config_and_inputs = self.model_tester.prepare_config_and_inputs_for_decoder()
+        self.model_tester.create_and_check_decoder_model_past_large_inputs(*config_and_inputs)
+
+    def test_decoder_model_past_with_large_inputs_relative_pos_emb(self):
+        config_and_inputs = self.model_tester.prepare_config_and_inputs_for_decoder()
+        config_and_inputs[0].position_embedding_type = "relative_key"
         self.model_tester.create_and_check_decoder_model_past_large_inputs(*config_and_inputs)
 
     def test_for_masked_lm(self):

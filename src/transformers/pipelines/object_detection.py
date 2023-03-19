@@ -26,6 +26,20 @@ class ObjectDetectionPipeline(Pipeline):
     Object detection pipeline using any `AutoModelForObjectDetection`. This pipeline predicts bounding boxes of objects
     and their classes.
 
+    Example:
+
+    ```python
+    >>> from transformers import pipeline
+
+    >>> detector = pipeline(model="facebook/detr-resnet-50")
+    >>> detector("https://huggingface.co/datasets/Narsil/image_dummy/raw/main/parrots.png")
+    [{'score': 0.997, 'label': 'bird', 'box': {'xmin': 69, 'ymin': 171, 'xmax': 396, 'ymax': 507}}, {'score': 0.999, 'label': 'bird', 'box': {'xmin': 398, 'ymin': 105, 'xmax': 767, 'ymax': 507}}]
+
+    >>> # x, y  are expressed relative to the top left hand corner.
+    ```
+
+    Learn more about the basics of using a pipeline in the [pipeline tutorial](../pipeline_tutorial)
+
     This object detection pipeline can currently be loaded from [`pipeline`] using the following task identifier:
     `"object-detection"`.
 
@@ -83,7 +97,7 @@ class ObjectDetectionPipeline(Pipeline):
     def preprocess(self, image):
         image = load_image(image)
         target_size = torch.IntTensor([[image.height, image.width]])
-        inputs = self.feature_extractor(images=[image], return_tensors="pt")
+        inputs = self.image_processor(images=[image], return_tensors="pt")
         if self.tokenizer is not None:
             inputs = self.tokenizer(text=inputs["words"], boxes=inputs["boxes"], return_tensors="pt")
         inputs["target_size"] = target_size
@@ -123,9 +137,7 @@ class ObjectDetectionPipeline(Pipeline):
             annotation = [dict(zip(keys, vals)) for vals in zip(scores.tolist(), labels, boxes) if vals[0] > threshold]
         else:
             # This is a regular ForObjectDetectionModel
-            raw_annotations = self.feature_extractor.post_process_object_detection(
-                model_outputs, threshold, target_size
-            )
+            raw_annotations = self.image_processor.post_process_object_detection(model_outputs, threshold, target_size)
             raw_annotation = raw_annotations[0]
             scores = raw_annotation["scores"]
             labels = raw_annotation["labels"]

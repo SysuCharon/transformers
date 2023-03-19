@@ -30,6 +30,18 @@ class ImageToTextPipeline(Pipeline):
     """
     Image To Text pipeline using a `AutoModelForVision2Seq`. This pipeline predicts a caption for a given image.
 
+    Example:
+
+    ```python
+    >>> from transformers import pipeline
+
+    >>> captioner = pipeline(model="ydshieh/vit-gpt2-coco-en")
+    >>> captioner("https://huggingface.co/datasets/Narsil/image_dummy/raw/main/parrots.png")
+    [{'generated_text': 'two birds are standing next to each other '}]
+    ```
+
+    Learn more about the basics of using a pipeline in the [pipeline tutorial](../pipeline_tutorial)
+
     This image to text pipeline can currently be loaded from pipeline() using the following task identifier:
     "image-to-text".
 
@@ -88,7 +100,7 @@ class ImageToTextPipeline(Pipeline):
 
     def preprocess(self, image):
         image = load_image(image)
-        model_inputs = self.feature_extractor(images=image, return_tensors=self.framework)
+        model_inputs = self.image_processor(images=image, return_tensors=self.framework)
         return model_inputs
 
     def _forward(self, model_inputs, generate_kwargs=None):
